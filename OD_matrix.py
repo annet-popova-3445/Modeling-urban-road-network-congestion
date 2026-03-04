@@ -80,12 +80,16 @@ for i in range(n_zones):
             )
 print("матрица расстояний рассчитана")
 
-#гравитационная модель - произведение с затуханием
-P = df_zones['population'].values.reshape(-1, 1)
-A = df_zones['jobs'].values.reshape(1, -1)
-prod = P * A
+#преобразуем столбцы в числа, + пропуски на 0
+pop_vals = pd.to_numeric(df_zones['population'], errors='coerce').fillna(0).values
+jobs_vals = pd.to_numeric(df_zones['jobs'], errors='coerce').fillna(0).values
+
+#+ матрица произведений (население i * рабочие места j)
+prod = np.outer(pop_vals, jobs_vals)
+
+#+ матрица расстояний
 d2 = dist_matrix ** 2
-d2[d2 == 0] = 0.1   #не делим на 0!
+d2[d2 == 0] = 0.1   # избегаем деления на ноль
 T = prod / d2
 
 #нормировка на общее число поездок

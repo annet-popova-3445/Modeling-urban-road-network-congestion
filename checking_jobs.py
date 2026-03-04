@@ -1,4 +1,4 @@
-zones = QgsProject.instance().mapLayersByName('city_zones')[0]
+zones = QgsProject.instance().mapLayersByName('novosibirsk_db — boundary')[0]
 print("{:<25} {:>15} {:>15}".format("район", "население", "рабочие места"))
 print("-" * 55)
 for feat in zones.getFeatures():
