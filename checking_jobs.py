@@ -1,5 +1,5 @@
-zones = QgsProject.instance().mapLayersByName('novosibirsk_db — boundary')[0]
-print("{:<25} {:>15} {:>15}".format("район", "население", "рабочие места"))
+zones = QgsProject.instance().mapLayersByName('intersections — city_boundary')[0]
+print("{:<25} {:>15} {:>15}".format("Район", "Население", "Рабочие места"))
 print("-" * 55)
 for feat in zones.getFeatures():
     name = feat['name'] if feat['name'] else "неизвестно"

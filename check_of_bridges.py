@@ -1,5 +1,5 @@
-# Проверка мостов
-layer = QgsProject.instance().mapLayersByName('novosibirsk_db — roads')[0]
+#проверка мостов
+layer = QgsProject.instance().mapLayersByName('roads')[0]
 bridge_count = 0
 for feat in layer.getFeatures():
     if feat['bridge'] == 'yes':

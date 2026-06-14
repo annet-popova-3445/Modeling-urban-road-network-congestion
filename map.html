@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Модель транспортной сети на основе открытых данных</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; background: #1a1a2e; }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            z-index: 1000;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            border: 1px solid rgba(255,255,255,0.2);
+            pointer-events: auto;
+        }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 12px;
+            pointer-events: none;
+        }
+        .legend h4 { margin: 0 0 8px 0; font-size: 14px; }
+        .legend span { display: inline-block; width: 20px; height: 10px; margin-right: 8px; border-radius: 2px; }
+        .legend-item { margin-bottom: 4px; }
+        input { cursor: pointer; }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div class="controls">
+    <strong>Фильтр по интенсивности</strong><br>
+    <input type="range" id="flowSlider" min="0" max="2000" step="50" value="0">
+    <span id="flowValue" style="font-weight:bold; margin-left:8px;">0</span> авт/ч
+</div>
+<div class="legend">
+    <h4>Интенсивность (авт/ч)</h4>
+    <div class="legend-item"><span style="background:#6af75f;"></span> 0–100</div>
+    <div class="legend-item"><span style="background:#8ca616;"></span> 100–300</div>
+    <div class="legend-item"><span style="background:#ff890a;"></span> 300–700</div>
+    <div class="legend-item"><span style="background:#f71414;"></span> 700–1500</div>
+    <div class="legend-item"><span style="background:#620506;"></span> >1500</div>
+</div>
+
+<script>
+    //инициализация карты с использованием стиля OpenFreeMap
+    const map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.versatiles.org/assets/styles/colorful/style.json',
+        center: [82.92, 55.03],
+        zoom: 11
+});
+
+    //добавление дорог поверх слоя карты
+    map.on('load', () => {
+        //добавление источникв для ваших данных
+        map.addSource('roads-data', {
+            type: 'vector',
+
+            tiles: ['http://localhost:3000/data/new_fin_roads/{z}/{x}/{y}.pbf']
+        });
+
+        //добавление слоя с дорогами поверх подложки
+        map.addLayer({
+            'id': 'roads-layer',
+            'type': 'line',
+            'source': 'roads-data',
+            'source-layer': 'roads',
+            'paint': {
+                'line-color': [
+                    'interpolate', ['linear'], ['get', 'total_flow'],
+                    0, '#6af75f',
+                    100, '#8ca616',
+                    300, '#ff890a',
+                    700, '#f71414',
+                    1500, '#620506'
+                ],
+                'line-width': 2,
+                'line-opacity': 0.8
+            }
+        });
+
+        //настройки фильтра по слайдеру
+        const slider = document.getElementById('flowSlider');
+        const span = document.getElementById('flowValue');
+        slider.addEventListener('input', () => {
+            const val = parseInt(slider.value, 10);
+            span.innerText = val;
+            map.setFilter('roads-layer', ['>=', ['get', 'total_flow'], val]);
+        });
+
+        //настройки попапа при клике
+        map.on('click', 'roads-layer', (e) => {
+            if (!e.features || e.features.length === 0) return;
+            const props = e.features[0].properties;
+            const name = props.name || 'без названия';
+            const flow = props.total_flow || 0;
+            new maplibregl.Popup()
+                .setLngLat(e.lngLat)
+                .setHTML(`<b>${name}</b><br>Интенсивность: ${flow.toFixed(0)} авт/ч`)
+                .addTo(map);
+        });
+
+        //изменение курсора при наведении на дорогу
+        map.on('mouseenter', 'roads-layer', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'roads-layer', () => {
+            map.getCanvas().style.cursor = '';
+        });
+    });
+</script>
+</body>
+</html>
